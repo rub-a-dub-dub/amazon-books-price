@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 '''
 This file identifies all of the categories in an Amazon top level marketplace (e.g. books, movies and tv, kitchen and dining etc.). Run with no command line options to get detailed help.
 '''
@@ -5,6 +7,7 @@ This file identifies all of the categories in an Amazon top level marketplace (e
 from bs4 import BeautifulSoup
 import urllib
 import argparse 
+import time
 
 def argCheck():
     '''Argument checking function'''
@@ -15,20 +18,68 @@ def argCheck():
 
 def startCrawl(url, curDepth, maxDepth):
     '''This procedure crawls a page for sub-categories, prints them out and recurses for each until curDepth == maxDepth'''
-    if curDepth === maxDepth return
+    if curDepth == maxDepth:
+        return
+
+    def processCategory(tag):
+        '''This procedure processes matching category tags'''
+        try:
+            linkTag = tag.a
+            if linkTag is not None:
+                href = linkTag["href"]
+                kids = linkTag.contents
+                nameTag = kids[1]
+                countTag = kids[2]
+                name = nameTag.string
+                count = countTag.string
+                print "\"" + unicode(name) + "\",\"" + unicode(count) + "\",\"" + unicode(href) + "\"," + str(curDepth)
+                return unicode(href)
+        except Exception as e:
+            pass
+
     try:
         # We're going to be reading the source URL first
         fid = urllib.urlopen(url)
-        data = fid.readlines()
+        data = fid.read()
         fid.close()
 
         # now use BS4 to get the classes of interest
         soup = BeautifulSoup(data)
-        print(soup.find_all("div", {"class" : "categoryRefinementsSection"}))
-    except e as IOError:
+        sectionOfInterest = soup.find_all("div", {"class" : "categoryRefinementsSection"})
+        if len(sectionOfInterest) > 1:
+            raise ValueError("More than 1 div.categoryRefinementsSection found! Expected just 1.")
+
+        # dig in further to get what we want
+        nextCrawlList = []
+        for tag in sectionOfInterest[0].descendants:
+            try:
+                if (tag.name == "ul"):
+                    if ("data-typeid" in tag.attrs):
+                        # We've found the category list
+                        ulTag = tag.descendants
+                        for subTag in ulTag:
+                            try:
+                                if subTag.name == "li":
+                                    nextLink = processCategory(subTag)
+                                    if nextLink is not None:
+                                        nextCrawlList.append(nextLink)
+                            except Exception as e:
+                                pass
+            except Exception as e:
+                pass
+
+        # Now we have finished printing all of the results from this crawl session. Move on to the next
+        for nextLink in nextCrawlList:
+            time.sleep(0.5)
+            startCrawl(nextLink, curDepth+1, maxDepth)
+
+    except IOError as e:
         print "*** Unable to read from " + url
 
 def main():
     '''Main programme entry point'''
     args = argCheck()
     startCrawl(args.url, 0, args.maxdepth)
+
+if __name__ == "__main__":
+    main()
