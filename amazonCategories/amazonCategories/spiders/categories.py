@@ -10,10 +10,26 @@ class CategoriesSpider(scrapy.Spider):
     )
 
     def parse(self, response):
+        namePrefix = ''
+        # get parent names
+        for name in response.xpath('//div[@class="categoryRefinementsSection"]/ul[2]/li[@class="shoppingEngineExpand"]/a/span[2]/text()'):
+            namePrefix = namePrefix + "." + name.extract()
+
+        # get current item name
+        name = response.xpath('//div[@class="categoryRefinementsSection"]/ul[2]/li/strong/text()')
+        if len(name) > 0:
+            name = name[0]
+            namePrefix = namePrefix + "." + name.extract()
+
+        # get rid of the prefixed "."
+        if len(namePrefix) > 0:
+            namePrefix = namePrefix[1:]
+
+        # now process the links on this page
         for category in response.xpath('//div[@class="categoryRefinementsSection"]/ul[2]/li[a/span[@class="refinementLink"]]'):
             retItem = AmazoncategoriesItem()
             twoVals = category.xpath('a/span/text()').extract()
-            retItem['name'] = twoVals[0]
+            retItem['name'] = namePrefix + "." + twoVals[0]
             retItem['count'] = twoVals[1]
             retItem['url'] = response.url
             retItem['ref'] = response.request.headers.get('Referer', None)
