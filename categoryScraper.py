@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup
 import urllib
 import argparse 
 import time
+import sys
 
 def argCheck():
     '''Argument checking function'''
@@ -18,8 +19,6 @@ def argCheck():
 
 def startCrawl(url, curDepth, maxDepth):
     '''This procedure crawls a page for sub-categories, prints them out and recurses for each until curDepth == maxDepth'''
-    if curDepth == maxDepth:
-        return
 
     def processCategory(tag):
         '''This procedure processes matching category tags'''
@@ -32,7 +31,7 @@ def startCrawl(url, curDepth, maxDepth):
                 countTag = kids[2]
                 name = nameTag.string
                 count = countTag.string
-                print "\"" + unicode(name) + "\",\"" + unicode(count) + "\",\"" + unicode(href) + "\"," + str(curDepth)
+                print "\"" + unicode(name) + "\",\"" + unicode(count) + "\",\"" + unicode(href) + "\"," + str(curDepth+1)
                 return unicode(href)
         except Exception as e:
             pass
@@ -48,33 +47,36 @@ def startCrawl(url, curDepth, maxDepth):
         sectionOfInterest = soup.find_all("div", {"class" : "categoryRefinementsSection"})
         if len(sectionOfInterest) > 1:
             raise ValueError("More than 1 div.categoryRefinementsSection found! Expected just 1.")
+        elif len(sectionOfInterest) == 1:
+            # dig in further to get what we want
+            nextCrawlList = []
+            for tag in sectionOfInterest[0].descendants:
+                try:
+                    if (tag.name == "ul"):
+                        if ("data-typeid" in tag.attrs):
+                            # We've found the category list
+                            ulTag = tag.descendants
+                            for subTag in ulTag:
+                                try:
+                                    if subTag.name == "li":
+                                        nextLink = processCategory(subTag)
+                                        if nextLink is not None:
+                                            nextCrawlList.append(nextLink)
+                                except Exception as e:
+                                    pass
+                except Exception as e:
+                    pass
 
-        # dig in further to get what we want
-        nextCrawlList = []
-        for tag in sectionOfInterest[0].descendants:
-            try:
-                if (tag.name == "ul"):
-                    if ("data-typeid" in tag.attrs):
-                        # We've found the category list
-                        ulTag = tag.descendants
-                        for subTag in ulTag:
-                            try:
-                                if subTag.name == "li":
-                                    nextLink = processCategory(subTag)
-                                    if nextLink is not None:
-                                        nextCrawlList.append(nextLink)
-                            except Exception as e:
-                                pass
-            except Exception as e:
-                pass
+        # Now we have finished printing all of the results from this crawl session. Move on to the next - if we haven't hit our depth limit
+        if curDepth == (maxDepth - 1)
+            return
 
-        # Now we have finished printing all of the results from this crawl session. Move on to the next
         for nextLink in nextCrawlList:
             time.sleep(0.5)
             startCrawl(nextLink, curDepth+1, maxDepth)
 
     except IOError as e:
-        print "*** Unable to read from " + url
+        sys.stderr.write("*** Unable to read from " + url)
 
 def main():
     '''Main programme entry point'''
