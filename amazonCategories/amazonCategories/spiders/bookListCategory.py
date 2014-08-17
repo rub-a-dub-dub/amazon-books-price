@@ -9,7 +9,7 @@ class BooklistcategorySpider(scrapy.Spider):
     allowed_domains = ["amazon.com"]
     # need to sample at least these many percent and # items
     minThreshPct = 15.0
-    minThreshVal = 20
+    minThreshVal = 36
     maxThreshVal = 240
     # this is the maximum number of pages Amazon makes available
     maxPages = 100
