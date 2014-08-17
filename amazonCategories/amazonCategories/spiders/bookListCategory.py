@@ -21,17 +21,17 @@ class BooklistcategorySpider(scrapy.Spider):
         # all (up to 12) book items
 
         # let's get the category first
-        pgCat = response.xpath('//h2[@id="s-result-count"]/a/text()').extract()
+        pgCat = response.xpath('//h2[@id="s-result-count"]/span/a/text()').extract()
         if len(pgCat) == 0: 
-            # sometimes it's wrapped in a span
-            pgCat = response.xpath('//h2[@id="s-result-count"]/span/a/text()').extract()
+            # sometimes it isn't wrapped in a span
+            pgCat = response.xpath('//h2[@id="s-result-count"]/a/text()').extract()
             if len(pgCat) == 0:
                 print "**** DEBUG: Couldn't parse base categories."
         pgCat = ".".join(pgCat)
         try:
-            pgCat = pgCat + "." + response.xpath('//h2[@id="s-result-count"]/span/text()').extract()[0]
-        except IndexError:
             pgCat = pgCat + "." + response.xpath('//h2[@id="s-result-count"]/span/span/text()').extract()[0]
+        except IndexError:
+            pgCat = pgCat + "." + response.xpath('//h2[@id="s-result-count"]/span/text()').extract()[0]
         except Exception:
             print "**** DEBUG: Couldn't parse category."
 
