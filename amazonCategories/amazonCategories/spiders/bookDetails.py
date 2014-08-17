@@ -55,4 +55,4 @@ class BookdetailsSpider(scrapy.Spider):
         # now loop through each item
         for item in data:
             url = item["url"]
-            yield scrapy.Request(crawlURL, callback=self.parse)
+            yield scrapy.Request(url, callback=self.parse)
