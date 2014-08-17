@@ -14,3 +14,9 @@ class AmazoncategoriesItem(scrapy.Item):
     name = scrapy.Field()
     count = scrapy.Field()
     ref = scrapy.Field()
+
+class AmazonBookOverviewItem(scrapy.Item):
+    # represents an Amazon book from the category listing page
+    url = scrapy.Field()
+    name = scrapy.Field()
+    category = scrapy.Field()
