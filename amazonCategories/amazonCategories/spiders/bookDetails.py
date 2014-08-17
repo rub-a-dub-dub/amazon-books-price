@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
 import scrapy
 import re
+import json
 from amazonCategories.items import AmazonBookPrices
 
 class BookdetailsSpider(scrapy.Spider):
     name = "bookDetails"
     allowed_domains = ["amazon.com"]
-    start_urls = (
-        'http://www.amazon.com/Not-This-World-Creatures-Supernatural/dp/1841830402/ref=sr_1_517?s=books&ie=UTF8&qid=1408243375&sr=1-517',
-    )
+    # start_urls = (
+    #     'http://www.amazon.com/Saving-Animals-Earthquakes-Rescuing-Disasters/dp/1617722898/ref=sr_1_24?s=books&ie=UTF8&qid=1408248984&sr=1-24',
+    # )
 
     def parse(self, response):
         # this will take us to the pricing page - not we just grab the first offer listing page, so hardcover, softcover et al are not going to be captured with this approach, a loop for all matching the xpath shown below will do the trick though, but additional logic will be needed to distinguish between the format based on the page contents
@@ -16,7 +17,7 @@ class BookdetailsSpider(scrapy.Spider):
         try:
             pricePageLink = response.xpath('//a[contains(@href,"offer-listing")]/@href').extract()[0]
             try:
-                itemID = re.search('.*\/(\d+)\/.*', pricePageLink).group(1)
+                itemID = re.search('\/gp\/offer-listing\/([0-9a-zA-Z]+)\/.*', pricePageLink).group(1)
                 priceURL = 'http://www.amazon.com/gp/offer-listing/' + itemID + '/'
                 yield scrapy.Request(priceURL, callback=lambda y: self.pricelist(y, response.url))
             except AttributeError:
@@ -44,3 +45,14 @@ class BookdetailsSpider(scrapy.Spider):
         # This loop extracts price pagination links
         for pricePgLink in response.xpath('//ul[@class="a-pagination"]/li[not(@class)]/a/@href').extract():
             yield scrapy.Request("http://www.amazon.com" + pricePgLink, callback=lambda y: self.pricelist(y, caller))
+
+    def start_requests(self):
+        # This grabs the list of URIs from /vagrant/books.json
+        dataFile = "/vagrant/books.json"
+        dataFid = open(dataFile)
+        data = json.load(dataFid)
+        
+        # now loop through each item
+        for item in data:
+            url = item["url"]
+            yield scrapy.Request(crawlURL, callback=self.parse)
