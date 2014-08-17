@@ -20,3 +20,10 @@ class AmazonBookOverviewItem(scrapy.Item):
     url = scrapy.Field()
     name = scrapy.Field()
     category = scrapy.Field()
+
+class AmazonBookPrices(scrapy.Item):
+    # Pricing details for a single item
+    url = scrapy.Field()
+    cond = scrapy.Field()
+    price = scrapy.Field()
+    sh = scrapy.Field()
