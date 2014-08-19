@@ -3,3 +3,5 @@
 .vagrant
 *.json
 *.log
+local_run
+crawls
