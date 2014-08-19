@@ -3,6 +3,7 @@ import scrapy
 import json
 import random
 from amazonCategories.items import AmazonBookOverviewItem
+from scrapy import log
 
 class BooklistcategorySpider(scrapy.Spider):
     name = "bookListCategory"
@@ -26,14 +27,15 @@ class BooklistcategorySpider(scrapy.Spider):
             # sometimes it isn't wrapped in a span
             pgCat = response.xpath('//h2[@id="s-result-count"]/a/text()').extract()
             if len(pgCat) == 0:
-                print "**** DEBUG: Couldn't parse base categories."
+                log.msg("Couldn't parse base categories: " + response.url, level=log.WARNING)
         pgCat = ".".join(pgCat)
         try:
             pgCat = pgCat + "." + response.xpath('//h2[@id="s-result-count"]/span/span/text()').extract()[0]
         except IndexError:
-            pgCat = pgCat + "." + response.xpath('//h2[@id="s-result-count"]/span/text()').extract()[0]
-        except Exception:
-            print "**** DEBUG: Couldn't parse category."
+            try:
+                pgCat = pgCat + "." + response.xpath('//h2[@id="s-result-count"]/span/text()').extract()[0]
+            except IndexError:
+                log.msg("Couldn't parse category title: " + response.url, level=log.WARNING)
 
         for result in response.xpath('//div[starts-with(@id, "result_")]'):
             baseLink = result.xpath('div[@class="data"]/h3/a')
