@@ -19,14 +19,14 @@ class BookdetailsSpider(scrapy.Spider):
             try:
                 itemID = re.search('\/gp\/offer-listing\/([0-9a-zA-Z]+)\/.*', pricePageLink).group(1)
                 priceURL = 'http://www.amazon.com/gp/offer-listing/' + itemID + '/'
-                yield scrapy.Request(priceURL, callback=lambda y: self.pricelist(y, response.url))
+                yield scrapy.Request(priceURL, callback=self.pricelist, meta={'caller': response.url})
             except AttributeError:
                 pass
         except IndexError:
             # not for sale!
             pass
 
-    def pricelist(self, response, caller):
+    def pricelist(self, response):
         #  The loop below extracts all prices from this page
         for priceRow in response.xpath('//div[contains(@class,"olpOffer") and not(contains(@class, "a-container"))]'):
             priceItem = priceRow.xpath('div/span[contains(@class, "olpOfferPrice")]/text()').extract()
@@ -39,12 +39,12 @@ class BookdetailsSpider(scrapy.Spider):
                 retVal["sh"] = ""
             retVal["cond"] = " ".join(condItem[0].strip().split())
             retVal["price"] = priceItem[0].strip()
-            retVal["url"] = caller
+            retVal["url"] = response.meta["caller"]
             yield retVal
 
         # This loop extracts price pagination links
         for pricePgLink in response.xpath('//ul[@class="a-pagination"]/li[not(@class)]/a/@href').extract():
-            yield scrapy.Request("http://www.amazon.com" + pricePgLink, callback=lambda y: self.pricelist(y, caller))
+            yield scrapy.Request("http://www.amazon.com" + pricePgLink, callback=self.pricelist, meta={'caller': response.meta["caller"]})
 
     def start_requests(self):
         # This grabs the list of URIs from /vagrant/books.json
