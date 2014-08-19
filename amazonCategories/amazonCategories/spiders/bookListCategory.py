@@ -67,7 +67,10 @@ class BooklistcategorySpider(scrapy.Spider):
                 if scanPages > self.maxPages: scanPages = self.maxPages
                 # randomly sample pages we need from the range amazon allows
                 pageRangeMax = int(min(self.maxPages, float(numItems)/self.itemsPerPage))
-                pages = random.sample(xrange(1, pageRangeMax), scanPages)
+                if pageRangeMax == scanPages:
+                    pages = xrange(1, pageRangeMax)
+                else:
+                    pages = random.sample(xrange(1, pageRangeMax), scanPages)
                 # now generate page URLs for each randomly sampled page number
                 for pg in pages:
                     crawlURL = url + "&page=" + str(pg)
